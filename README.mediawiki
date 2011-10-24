@@ -1,10 +1,12 @@
 ''MATLAB FS11 – Research Plan''
 
-<span style="text-decoration: underline;">Trail formation</span>
+<ins>Trail formation</ins>
 
 
 '''Document Version:''' 1 
+
 '''Group Name:'''
+
 '''Group participants names:''' Briner Katja, Marti Marcel, Meier Thomas
 
 
