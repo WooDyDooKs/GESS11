@@ -1,6 +1,6 @@
 ''MATLAB FS11 – Research Plan''
 
-<span style="text-decoration: underline;">'''Trail formation'''</span>
+<span style="text-decoration: underline;">Trail formation</span>
 
 
 '''Document Version:''' 1 
@@ -30,6 +30,7 @@ We expect people to be guided only be strongly marked trails and obstacles to ha
 '''References '''
 
 Modelling_Evolution_of_Human_Trail_Systems-Helbling1997
+
 We’d like to extend the model by adding a certain level of attraction towards existing trails we can establish randomly.
 
 
