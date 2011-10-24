@@ -3,14 +3,11 @@ MATLAB FS11 – Research Plan
 Trail formation
 ===============
 
-
-Document Version: 1 
-
-## Group Name:
-Tomaka
-
-## Group participants names: 
-Briner Katja, Marti Marcel, Meier Thomas
+> **Document Version:**  1
+>
+> **Group Name:**                       Tomaka
+>
+> **Group participants names:**         Briner Katja, Marti Marcel, Meier Thomas
 
 ## General Introduction
 
