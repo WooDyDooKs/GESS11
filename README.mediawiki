@@ -1,6 +1,6 @@
 ''MATLAB FS11 – Research Plan''
 
-'''Trail formation'''
+<span style="text-decoration: underline;">'''Trail formation'''</span>
 
 
 '''Document Version:''' 1 
