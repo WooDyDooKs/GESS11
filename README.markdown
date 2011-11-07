@@ -11,32 +11,28 @@ Trail formation
 
 ## General Introduction
 
-Knowing how pedestrians choose and form trails is important to develop means to guide them and lay out useful lanes. 
-
+As we travel by train regularly, we often experience commuters jamming into trains.
+Based on the work of Philipp Heer & Lukas Bühler about Pedestrian Dynamics - Airplane
+Evacuation Simulation we'd like to add the possibility of people entering a vehicle. In our case the vehicle will be a train. Our personal motivation to investigate further on this topic was that this phenomenom is annoying.
 
 ## Fundamental Questions
 
-We would like to find answers to following questions:
-
-How do obstacles (e.g. trees) influence trail formation? And thus, can pedestrians be guided by simply marking the trail with trees or is it necessary to highlight the intended track using gravel or other means?
-
-Variables: how many times an agent passes a specific place (Where do the most “people” pass?). Could be measured using a counting loop for a number of areas.
-
+We'd like to investigate in what manner time needed to leave and enter the train depends on tendency of people to jam.
+How does the time needed to leave and enter the train change with different levels of aggression? How does it change by defining distinct doors as exits or entries?
 
 ## Expected Results
 
-We expect people to be guided only be strongly marked trails and obstacles to have a minor influence on trail formation.
-
+We expect the time needed to leave the train to decrease when rules are obeyed.
 
 ## References 
 
-Modelling_Evolution_of_Human_Trail_Systems-Helbling1997
-
-We’d like to extend the model by adding a certain level of attraction towards existing trails we can establish randomly.
-
+- Pedestrian Dynamics Airplane Evacuation Simulation - P. Heer, L. Bühler
+- Train Boarding Platform Simulation - D. Graf, M. Krebs
+- Modeling crowd turbulence by many-particle simulations - Wenjian Yu and Anders Johansson
+- Self-Organized Pedestrian Crowd Dynamics: Experiments, Simulations, and Design Solutions - Helbing, Buzna, Johansson, Werner
+- Social force model for pedestrian dynamics - Helbing, Molnár
 
 ## Research Methods
 
-We’re planning on using agent based modeling.
-
+Agent - Based Model of passengers, Social Force Particle Model
 
