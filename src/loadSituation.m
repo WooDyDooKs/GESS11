@@ -47,7 +47,7 @@ walls = findColor(rawMap, 0, 0, 0);
 space = findColor(rawMap, 255, 255, 255);
 slow  = findColor(rawMap, 255, 255, 0);
 
-[lines, columns] = size(rawMap);
+[lines, columns, depth] = size(rawMap);
 if (length(walls) + length(space) + length(slow)) ~= lines*columns,
     error('Invalid input map.');
 end
