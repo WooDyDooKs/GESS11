@@ -12,7 +12,7 @@ for i = 1:m,
     for j = 1:n,
         px = [Image(i,j,1); Image(i,j,2); Image(i,j,3)];
         if px == search_px,
-            Entries = [Entries; i + j*m];
+            Entries = [Entries; i + j*m - m];
         end
     end
 end

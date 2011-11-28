@@ -29,7 +29,7 @@ tline = fgetl(f);
 S = {};
 i = 1;
 while ischar(tline)
-    S{i, 1} = tline;
+    S{i, 1} = [pathname,tline];
     i = i + 1;
     tline = fgetl(f);
 end
@@ -65,7 +65,7 @@ else
     for i = 2:nFiles,
         rawLayer = imread(S{i,1});
         space  = findColor(rawLayer, 255, 255, 255);
-        starts = findColor(rawLayer, 0, 0, 255);
+        starts = findColor(rawLayer, 0, 255, 0);
         ends   = findColor(rawLayer, 255, 0, 0);
 
         if length(space) + length(starts) + length(ends) ~= lines * columns,

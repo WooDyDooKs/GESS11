@@ -1,0 +1,3 @@
+Map.bmp
+Group1.bmp
+Group2.bmp
