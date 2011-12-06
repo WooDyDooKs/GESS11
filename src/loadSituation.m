@@ -17,7 +17,7 @@ function [Map, Layers] = loadSituation()
 %   0 => Wall, 1 => Free space, 2 => slow area
 %
 %   The output layer - matrices contain:
-%   1 => Free space, 2 => starting point, 3 => ending point
+%   1 => Free space, 2 => starting point, Inf => ending point
 
 
 %Open text file containing all situation files.
@@ -75,7 +75,7 @@ else
         layer  = zeros(lines, columns);
         layer(space)  = 1;
         layer(starts) = 2;
-        layer(ends)   = 3;
+        layer(ends)   = Inf;
 
         Layers(:,:,i-1) = layer;
     end

@@ -9,15 +9,18 @@ function [Vectorfields] = preprocessSituation(Map, Layers)
 %   for every layer.
 [m, n, k] = size(Layers);
 
-
+Walls = find(Map == 0);
 Vectorfields = cell(k, 1);
 %For every Layer, compute the vector field and store it in a cell array.
 for i = 1:k,
-    [VFX, VFY] = computeVF(Layers(:,:,k), sprintf('Layer%d.bmp', k));
+    %Insert the walls into every layer.
+    Layer = Layers(:,:,i);
+    Layer(Walls) = 0;
+    [VFX, VFY] = computeVF(Layer, sprintf('Layer%d.jpg', i));
     VF = zeros(m, n, 2);
     VF(:,:,1) = VFX;
     VF(:,:,2) = VFY;
-    Vectorfields{k} = VF;
+    Vectorfields{i} = VF;
 end
 
 

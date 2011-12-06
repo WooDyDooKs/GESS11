@@ -26,7 +26,7 @@ Walls = find(M == 0);
 F(Walls) = 0;
 
 %   Find exits.
-[ExitRows, ExitCols, V] = find( M == 3);
+[ExitRows, ExitCols, V] = find( M == Inf );
 
 %   Generate exit vector.
 nExits = length(V);
@@ -42,18 +42,18 @@ options.nb_iter_max = Inf;
 %   Plot if needed.
 if File ~= -1,
     fig = figure('visible', 'off');
-    
+      
     %   Plot contours.
+    D(D == inf) = 0;
     contour(D);
     hold on;
-    
+     
     %   Plot Vectorfield
-    quiver(VFX, VFY, 0.1);
-    hold on;
+    quiver(VFX(1:10:m, 1:10:n), VFY(1:10:m, 1:10:n), 2);  
     
     [WallRows, WallCols, V] = find(F == 0);
     %   Plot Walls
-    p = plot(WallCols, WallRows, '.b');
+    p = plot(WallCols, WallRows, '.k');
     set(p, 'MarkerSize', 10);
     
     %   Plot Exits
@@ -61,7 +61,7 @@ if File ~= -1,
     set(p, 'MarkerSize', 20);
     
     %   Print to file
-    print(fig, '-dbmp256', File);
+    print(fig, '-djpeg', File);
 end    
 
 end

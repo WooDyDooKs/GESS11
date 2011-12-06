@@ -12,12 +12,14 @@ function [FFX, FFY] = gradientField(M)
 
 FX = zeros(m, n);
 FY = zeros(m, n);
+FFX = zeros(m ,n);
+FFY = zeros(m, n);
 
 %   Check every element of the input matrix.
 for i = 1:m
     for j = 1:n
         %   Is M(i, j) part of the wall?
-        if M(i, j) == Inf,
+        if M(i, j) ~= Inf,
             %   Is M(i, j) on the border of the map?
             if j > 1 && j < n,
                 %   M(i, j) is not on the border.
@@ -119,11 +121,7 @@ for i = 1:m
             %   M(i, j) is part of the wall.
             FX(i, j) = 0;
             FY(i, j) = 0;
-        end
-        
-        FFX = zeros(m ,n);
-        FFY = zeros(m, n);
-        
+        end        
         
         %   Normalize vector
         if FX(i, j) ~= 0 && FY(i, j) ~= 0,
@@ -138,6 +136,5 @@ for i = 1:m
         end
     end
 end
-
 end
 
