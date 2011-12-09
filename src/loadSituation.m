@@ -57,6 +57,12 @@ Map(walls) = 0;
 Map(space) = 1;
 Map(slow)  = 2;
 
+%Add a wall around the map.
+Map(:, 1)       = 0;
+Map(1, :)       = 0;
+Map(:, columns) = 0;
+Map(lines, :)   = 0;
+
 if nLayers == 0,
     Layers = [];
 else

@@ -1,0 +1,7 @@
+The Project folder is organized as follows:
+
+src/	Contains all the source files and example output files.
+res/	Contains all ressources for the project, like maps, source code of third parties and images.
+doc/	Contains the documentation related files.
+
+Every file and its source is delivered (PDF, SDR files, *.docx etc.)
