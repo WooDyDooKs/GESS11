@@ -68,6 +68,7 @@ Vectorfields        =   preprocessSituation(Map, Layers);
 T                   =   200;
 dt                  =   0.1;
 Lambda              =   0.5;
+ExitRadius          =   1;
 pInfArea            =   5;
 sInfArea            =   10;
 wInfArea            =   1.5;
@@ -93,12 +94,16 @@ Groups(:).nSpawned      =   0;
 Groups(nGroups).Starts(1).Position  = [0; 0];
 Groups(nGroups).Ends(1).Position    = [0; 0];
 
+%   Count exits.
+nExits = 0;
+
 for i = 1:nGroups,
     Layer = Layers(:,:,i);
     [StartRow,  StartCol,   V] = find(Layer == 2);
     [EndRow,    EndCol,     V] = find(Layer == Inf);
     nStarts = length(StartRow);
     nEnds   = length(EndRow);
+    nExits = nExits + nEnds;
     Groups(i).Starts(nStarts).Position       = [0; 0];
     Groups(i).Ends(nEnds).Position           = [0; 0];
     %   Convert Matrix to structure array.
@@ -151,6 +156,9 @@ end
 for i = 1:nWalls,
     x = Walls(i).Position(1);
     y = Walls(i).Position(2);
+    if y == 1 || x == 1 || y == m || x == n,
+        continue;
+    end
     if Map(y - 1, x) == 0 && Map(y + 1, x) == 0 && Map(y, x - 1) == 0 && Map(y, x + 1) == 0,
         Walls(i).Unneeded = 1;
     end 

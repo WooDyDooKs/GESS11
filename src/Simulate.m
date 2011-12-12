@@ -26,6 +26,7 @@
 %   wInfArea                |   The wall influence area.
 %   sInfArea                |   The social influence area for passengers.
 %   nPassengers             |   The number of passengers in each group.
+%   nExits                  |   The number of exits.
 %   nTotalPassengers        |   The total number of passengers.
 %   eps                     |   The predefined epsilon value.
 %   Passengers              |   Structure holding information about every
@@ -37,6 +38,8 @@
 %                           |   wall element.
 
 run Setup;
+
+Movie = avifile('Output.avi');
 
 %   Our simulation will run the specified time with a specified frequency.
 for t = 1:dt:T,
@@ -63,7 +66,7 @@ for t = 1:dt:T,
         end
         
         %   Now re-check, if the passenger has started or not finished. If not, stop here.
-        if Passsengers(pNo).Started == 0 || Passengers(pNo).Finished == 1,
+        if Passengers(pNo).Started == 0 || Passengers(pNo).Finished == 1,
             continue;
         end
         
@@ -86,12 +89,18 @@ for t = 1:dt:T,
         %   path. How much the passenger will be pushed towards its
         %   shortest path, depends on the aggression level of the
         %   passenger.
-        row = int16(Passenger(pNo).Position(2));
-        col = int16(Passenger(pNo).Position(1));
+        Position = Passengers(pNo).Position;
+        row = int16(Position(2));
+        col = int16(Position(1));
         
-        Passengers(pNo).FieldForce = Vectorfields(row, col, Passengers(pNo).Group) * Passsengers(pNo).Aggression;
+        if row == 0 || col == 0 || row > m || col > n,
+            error('Passenger walked to an invalid position.');
+        end
         
-        clear row col;
+        Field = Vectorfields{Passengers(pNo).Group};
+        Passengers(pNo).FieldForce = [Field(row, col, 1); Field(row, col, 2)] * Passengers(pNo).Aggression;
+        
+        clear row col Position;
         
         %   2.  Wall force.
         %   
@@ -108,7 +117,7 @@ for t = 1:dt:T,
                 WallIntRange    = Passengers(pNo).Interactionrange.Wall;
                 %   Now we need the direction of the passenger to be
                 %   pushed.
-                Direction = Passenger(pNo).Position - Walls(wNo).Position;
+                Direction = Passengers(pNo).Position - Walls(wNo).Position;
                 if Direction(1) > Direction(2),
                     Direction(2) = 0;
                 elseif Direction(2) > Direction(1),
@@ -141,7 +150,7 @@ for t = 1:dt:T,
             %   Also we don't want to check with inactive passengers.
             if opNo == pNo || Passengers(opNo).Started == 0 || Passengers(opNo).Finished == 1, continue; end
             
-            Distance = norm(Passengers(pNo).Position - Passenger(opNo).Position);
+            Distance = norm(Passengers(pNo).Position - Passengers(opNo).Position);
             if Distance < pInfArea + Passengers(pNo).Radius + Passengers(opNo).Radius,
 
                 %   Now calculate the physical force.
@@ -152,12 +161,121 @@ for t = 1:dt:T,
                 ForceRange = Passengers(pNo).Interactionrange.Physical;
                 Direction = (Passengers(pNo).Position - Passengers(opNo).Position)./Distance;
                 
-                Passengers(pNo).RejectForce = Passenger(pNo).RejectForce + (AggressionB + ForceStrength)*exp((RadiusA + RadiusB - Distance)/ForceRange) * Direction;
+                Passengers(pNo).RejectForce = Passengers(pNo).RejectForce...
+                    + (AggressionB + ForceStrength)...
+                    *exp((RadiusA + RadiusB - Distance)/ForceRange) * Direction;
+                %   Clear trash.
+                clear RadiusA RadiusB AggressionB ForceStrength ForceRange Direction;
+            end
+            
+            
+            if Distance < sInfArea + Passengers(pNo).Radius + Passengers(opNo).Radius;
+                
+                %   Now calculate the social force
+                Direction = (Passengers(pNo).Position - Passengers(opNo).Position)./Distance;
+                Move = (Passengers(pNo).Position - Passengers(pNo).OldPosition);
+                MoveNorm = norm(Move);
+                Move = Move./MoveNorm;
+                Phi = acos(dot(Direction, Move));
+                
+                Passengers(pNo).SocialForce = Passengers(pNo).SocialForce...
+                    + ((Lambda + (1 - Lambda)*(1 + cos(Phi)))/2)...
+                    *Passengers(pNo).Interactionstrength.Social...
+                    *exp(1 - Distance/Passengers(pNo).Interactionrange.Social)*Direction;
+                
+                %   Clear trash.
+                clear Direction Move MoveNorm Move Phi;
             end
         end
         
+        %   Acculmulate forces
+        SocialForce         =   Passengers(pNo).SocialForce;
+        WallForce           =   Passengers(pNo).WallForce;
+        RejectForce         =   Passengers(pNo).RejectForce;
+        FieldForce          =   Passengers(pNo).FieldForce;
+        TotalForce          =   SocialForce + WallForce + RejectForce + FieldForce;
+        
+        %   F = m*a => a = F/m
+        Weight              =   Passengers(pNo).Weight;
+        Acceleration        =   TotalForce/Weight;
+        
+        %   Store old position.
+        OldPosition                     =   Passengers(pNo).OldPosition;
+        Passengers(pNo).OldPosition     =   Passengers(pNo).Position;
+        
+        %   Calculate new position.
+        Position                        =   Passengers(pNo).Position;
+        Passengers(pNo).Position        =   dt*Acceleration + Passengers(pNo).Position;
+        Position                        =   Passengers(pNo).Position;
         
         
+        %   Catch strange position assignments
+        row = int16(Position(2));
+        col = int16(Position(1));
+        
+        if row == 0 || col == 0 || row > m || col > n,
+            error('Something went wrong.');
+        end
+        
+        %   Clear trash.
+        clear col row SocialForce WalGESS11lForce RejectForce FieldForce TotalForce Weight Acceleration Position OldPosition;
+        
+        %   Check if the passenger has finished.
+        Group   = Passengers(pNo).Group;
+        Ends    = [Groups(Group).Ends.Position];
+        nEnds   = length(Ends(1,:));
+        for i = 1:nEnds,
+            Direction   = (Passengers(pNo).Position - Ends(:,i));
+            Distance    = norm(Direction);
+            Direction   = Direction./Distance;
+            
+            if Distance < ExitRadius + Passengers(pNo).Radius,
+                Passengers(pNo).Finished = 1;
+            end
+        end
+        %   Clear trash.
+        clear Direction Distance nEnds Ends Group;
     end
     
+    %   Plot this shit.
+    StartedMatrix       = [Passengers.Started];         %   This is ugly, but needed to debug.
+    FinishedMatrix      = [Passengers.Finished];
+    PassengersReady     = sum(StartedMatrix) - sum(FinishedMatrix);
+    PassengerPositions  = zeros(2, PassengersReady);
+    MatrixPosition      = 1;
+    for i = 1:nTotalPassengers,
+        Started     = Passengers(i).Started;
+        Finished    = Passengers(i).Finished;
+        if Started == 1 && Finished == 0,
+            PassengerPositions(:,MatrixPosition) = Passengers(i).Position;
+            MatrixPosition = MatrixPosition + 1;
+        end
+    end
+    WallPositions       = [Walls.Position];
+    ExitPositions       = zeros(2, nExits);
+    MatrixPosition      = 1;
+    for i = 1:nGroups,
+        Ends = [Groups(i).Ends.Position];
+        nEnds = length(Ends(1,:));
+        ExitPositions(:,MatrixPosition:MatrixPosition+nEnds-1) = Ends;
+        MatrixPosition = MatrixPosition + nEnds;
+    end
+    plot(WallPositions(1, :), WallPositions(2, :), '.k', 'MarkerSize', 20);
+    hold on;
+    plot(ExitPositions(1, :), ExitPositions(2, :), '.r', 'MarkerSize', 20);
+    plot(PassengerPositions(1, :), PassengerPositions(2, :), '.bl', 'MarkerSize', 30);
+    xlim([0 n]);
+    ylim([0 m]);
+    title(num2str(t));
+    
+    %   Add Frame to movie.
+    Frame = getframe(gca);
+    Movie = addframe(Movie, Frame);
+    clf('reset');
+    
+    %   Clear trash.
+    clear PassengersReady PassengerPositions WallPositions ExitPositions MatrixPosition i Ends nEnds StartedMatrix FinishedMatrix Started Finished;
 end
+
+Movie = close(Movie);
+clear all;
