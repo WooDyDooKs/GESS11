@@ -28,22 +28,41 @@
 clear all;
 clc
 
+%   Load a situation
+[Map, Layers]       =   loadSituation;
+Vectorfields        =   preprocessSituation(Map, Layers);
+[m, n, nGroups]     =   size(Layers);
+
+%   Define variables neede for the simulation.
+T                   =   200;
+dt                  =   0.1;
+Lambda              =   0.5;
+ExitRadius          =   1;
+pInfArea            =   1.5;
+sInfArea            =   10;
+wInfArea            =   3;
+nPassengers         =   40;
+nTotalPassengers    =   nPassengers * nGroups;
+fField              =   20;
+fForceStretch       =   5;
+spawnSecurityFactor =   1.5;
+
 %************************************************************************%
 %   Default Values:                                                      %
 %                                                                        %       
 %   Change these values to adjust default behaviour.                     %
 %************************************************************************%
-Defaults.Interactionstrength.Physical   =   80;
-Defaults.Interactionstrength.Social     =   40;
-Defaults.Interactionstrength.Wall       =   1000;
-Defaults.Interactionrange.Physical      =   1;
-Defaults.Interactionrange.Social        =   2;
-Defaults.Interactionrange.Wall          =   5;
+Defaults.Interactionstrength.Physical   =   20;
+Defaults.Interactionstrength.Social     =   30;
+Defaults.Interactionstrength.Wall       =   50;
+Defaults.Interactionrange.Physical      =   pInfArea;
+Defaults.Interactionrange.Social        =   sInfArea;
+Defaults.Interactionrange.Wall          =   wInfArea;
 Defaults.Weight.Minimum                 =   50;
 Defaults.Weight.Maximum                 =   120;
 Defaults.Weight.Heavy                   =   1e10;
-Defaults.Radius.Minimum                 =   2;
-Defaults.Radius.Maximum                 =   5;
+Defaults.Radius.Minimum                 =   1;
+Defaults.Radius.Maximum                 =   4;
 %************************************************************************%
 %   Explanation:                                                         %
 %                                                                        %
@@ -56,25 +75,6 @@ Defaults.Radius.Maximum                 =   5;
 %   increase of the resulting force. In the same distance, the resulting %
 %   is smaller the higher the interactionrange.                          %
 %************************************************************************%
-
-
-
-%   Load a situation
-[Map, Layers]       =   loadSituation;
-Vectorfields        =   preprocessSituation(Map, Layers);
-[m, n, nGroups]     =   size(Layers);
-
-%   Define variables neede for the simulation.
-T                   =   200;
-dt                  =   0.1;
-Lambda              =   0.5;
-ExitRadius          =   1;
-pInfArea            =   5;
-sInfArea            =   10;
-wInfArea            =   1.5;
-nPassengers         =   10;
-nTotalPassengers    =   nPassengers * nGroups;
-fField              =   40;
 
 %   Description of the group array format:
 %   =====================================================================
@@ -95,7 +95,8 @@ Groups(:).nSpawned      =   0;
 Groups(nGroups).Starts(1).Position  = [0; 0];
 Groups(nGroups).Ends(1).Position    = [0; 0];
 
-%   Count exits.
+%   Count exits and spawns.
+nSpawns = 0;
 nExits = 0;
 
 for i = 1:nGroups,
@@ -103,13 +104,14 @@ for i = 1:nGroups,
     [StartRow,  StartCol,   V] = find(Layer == 2);
     [EndRow,    EndCol,     V] = find(Layer == Inf);
     nStarts = length(StartRow);
+    nSpawns = nSpawns + nStarts;
     nEnds   = length(EndRow);
     nExits = nExits + nEnds;
     Groups(i).Starts(nStarts).Position       = [0; 0];
     Groups(i).Ends(nEnds).Position           = [0; 0];
     %   Convert Matrix to structure array.
     for j = 1:nStarts,
-        Groups(i).Starts(j).Position = [StartCol(j); EndRow(j)];
+        Groups(i).Starts(j).Position = [StartCol(j); StartRow(j)];
     end
     for j = 1:nEnds,
         Groups(i).Ends(j).Position   = [EndCol(j); EndRow(j)];
@@ -187,14 +189,16 @@ nWalls = length(Walls);
 %               |   or 'false', if not.
 %   Started     |   Either 'true', if the passenger is walking or 'false',
 %               |   if the passenger is still waiting.
-%   Fieldforce  |   2x1 - Vector indicating the force applied to the 
+%   FieldForce  |   2x1 - Vector indicating the force applied to the 
 %               |   passenger by its force field.
-%   Socialforce |   2x1 - Vector indicating the social force applied to the
+%   SocialForce |   2x1 - Vector indicating the social force applied to the
 %               |   passenger.
-%   Rejectforce |   2x1 - Vector indicating the force applied to the
+%   RejectForce |   2x1 - Vector indicating the force applied to the
 %               |   passenger by other passengers.
-%   Wallforce   |   2x1 - Vector indicating the force applied to the 
+%   WallForce   |   2x1 - Vector indicating the force applied to the 
 %               |   passenger by wall elements.
+%   TotalForce  |   2y1 - Vector indicating the total force applied to the
+%               |   passenger.
 %   Group       |   Scalar value, 0 < Group <= k, indicating the group to 
 %               |   which the passengers belongs.
 %
@@ -227,6 +231,7 @@ Passengers(nTotalPassengers).FieldForce   =   [0;     0];
 Passengers(nTotalPassengers).SocialForce  =   [0;     0];
 Passengers(nTotalPassengers).RejectForce  =   [0;     0];
 Passengers(nTotalPassengers).WallForce    =   [0;     0];
+Passengers(nTotalPassengers).TotalForce   =   [0;     0];
 Passengers(nTotalPassengers).Group        =   0;
 Passengers(nTotalPassengers).Radius       =   0;
 Passengers(nTotalPassengers).Aggression   =   0;
@@ -236,8 +241,10 @@ for i = 1:nTotalPassengers,
     Passengers(i).Weight    =   unidrnd(Defaults.Weight.Maximum - Defaults.Weight.Minimum) + Defaults.Weight.Minimum;
     %   Determine group for every passenger.
     Passengers(i).Group     =   mod(i, nGroups) + 1;
+    %   Determine random Radius
+    Passengers(i).Radius    =   unidrnd(Defaults.Radius.Maximum - Defaults.Radius.Minimum) + Defaults.Radius.Minimum;
     %   Determine random aggression for every passenger.
-    Passengers(i).Aggression   =    unidrnd(20) + 5;
+    Passengers(i).Aggression   =    unidrnd(30);
     %   Initialize every field.
     Passengers(i).Position     =   [0;     0];
     Passengers(i).OldPosition  =   [eps;   0];
@@ -247,6 +254,7 @@ for i = 1:nTotalPassengers,
     Passengers(i).SocialForce  =   [0;     0];
     Passengers(i).RejectForce  =   [0;     0];
     Passengers(i).WallForce    =   [0;     0];
+    Passengers(i).TotalForce   =   [0;     0];
 
     Passengers(i).Interactionstrength.Physical     =   Defaults.Interactionstrength.Physical;
     Passengers(i).Interactionstrength.Social       =   Defaults.Interactionstrength.Social;

@@ -26,7 +26,11 @@
 %   wInfArea                |   The wall influence area.
 %   sInfArea                |   The social influence area for passengers.
 %   nPassengers             |   The number of passengers in each group.
+%   fField                  |   The factor applied to the field force.
+%   fForceStretch           |   The factor applied to the total force.
+%   SpawnSecurityFactor     |   The additional radius for the spawn area.
 %   nExits                  |   The number of exits.
+%   nSpawns                 |   The number of spawn points.
 %   nTotalPassengers        |   The total number of passengers.
 %   eps                     |   The predefined epsilon value.
 %   Passengers              |   Structure holding information about every
@@ -40,29 +44,48 @@
 run Setup;
 
 Movie = avifile('Output.avi');
+clf('reset');
 
 %   Our simulation will run the specified time with a specified frequency.
 for t = 1:dt:T,
     
-    %   Calculate forces for every passenger.
     for pNo = 1:nTotalPassengers,
-        
         %   Check, if the passenger has started.
         if Passengers(pNo).Started == 0,
             %   Check if there is a free slot for him to start.
             Spawns = getSpawns(Passengers, Groups, Walls);
             nStarts = length(Spawns(Passengers(pNo).Group).Starts);
             for sNo = 1:nStarts,
-                if Spawns(Passengers(pNo).Group).Starts(sNo) > Passengers(pNo).Radius,
+                if Spawns(Passengers(pNo).Group).Starts(sNo) > Passengers(pNo).Radius + spawnSecurityFactor,
                     %   The passenger can start at this position.
                     Passengers(pNo).Position = Groups(Passengers(pNo).Group).Starts(sNo).Position;
-                    Passengers(pNo).OldPosition = Passengers(pNo).Position + [eps; 0];
+                    Position = Passengers(pNo).Position;
+                    Passengers(pNo).OldPosition = Passengers(pNo).Position + [(unidrnd(2*1e3)-1e3)/1e6; (unidrnd(2*1e3)-1e3)/1e6];
                     Passengers(pNo).Started = 1;
                     break;
                 end
             end
             
             clear nStarts Spawns sNo;
+        end
+    end
+    
+    %   Calculate forces for every passenger.
+    for pNo = 1:nTotalPassengers,
+        
+    
+        %   Check if the passenger has finished.
+        Group   = Passengers(pNo).Group;
+        Ends    = [Groups(Group).Ends.Position];
+        nEnds   = length(Ends(1,:));
+        for i = 1:nEnds,
+            Direction   = (Passengers(pNo).Position - Ends(:,i));
+            Distance    = norm(Direction);
+            Direction   = Direction./Distance;
+
+            if Distance < ExitRadius + Passengers(pNo).Radius,
+                Passengers(pNo).Finished = 1;
+            end
         end
         
         %   Now re-check, if the passenger has started or not finished. If not, stop here.
@@ -93,7 +116,7 @@ for t = 1:dt:T,
         row = int16(Position(2));
         col = int16(Position(1));
         
-        if row == 0 || col == 0 || row > m || col > n,
+        if row <= 0 || col <= 0 || row > m || col > n,
             error('Passenger walked to an invalid position.');
         end
         
@@ -127,7 +150,7 @@ for t = 1:dt:T,
                 Driection = Direction ./ norm(Direction);
                 %   Now we need the weight of the force.
                 Weight = WallIntStrength * exp( -Distance/WallIntRange );
-                Passengers(pNo).WallForce = Passengers(pNo).Wallforce + Weight * Direction;
+                Passengers(pNo).WallForce = Passengers(pNo).WallForce + Weight * Direction;
             end
         end
         clear Direction Distance Weight WallIntStrength WallIntRange;
@@ -156,13 +179,16 @@ for t = 1:dt:T,
                 %   Now calculate the physical force.
                 RadiusA = Passengers(pNo).Radius;
                 RadiusB = Passengers(opNo).Radius;
+                AggressionA = Passengers(pNo).Aggression;
                 AggressionB = Passengers(opNo).Aggression;
+                AggressionSummand = AggressionB - AggressionA;
+                if AggressionSummand < 0, AggressionSummand = 0; end
                 ForceStrength = Passengers(pNo).Interactionstrength.Physical;
                 ForceRange = Passengers(pNo).Interactionrange.Physical;
                 Direction = (Passengers(pNo).Position - Passengers(opNo).Position)./Distance;
                 
                 Passengers(pNo).RejectForce = Passengers(pNo).RejectForce...
-                    + (AggressionB + ForceStrength)...
+                    + (AggressionSummand + ForceStrength)...
                     *exp((RadiusA + RadiusB - Distance)/ForceRange) * Direction;
                 %   Clear trash.
                 clear RadiusA RadiusB AggressionB ForceStrength ForceRange Direction;
@@ -197,73 +223,41 @@ for t = 1:dt:T,
         WallForce           =   Passengers(pNo).WallForce;
         RejectForce         =   Passengers(pNo).RejectForce;
         FieldForce          =   Passengers(pNo).FieldForce;
-        TotalForce          =   SocialForce + WallForce + RejectForce + FieldForce;
+        Passengers(pNo).TotalForce          =   WallForce + FieldForce + SocialForce + RejectForce;
+        Passengers(pNo).TotalForce          =   Passengers(pNo).TotalForce.*fForceStretch;
         
-        %   Check for errors
-        if sum(isnan(TotalForce)) ~= 0,
-            error('NaN in TotalForce.')
+        %   Clear trash.
+        clear SocialForce WallForce RejectForce FieldForce Direction Distance nEnds Ends Group;
+    end
+    
+    %   Calculate new Position
+    for pNo = 1:nTotalPassengers,
+         %   If the passenger has not started or finished, stop here.
+        if Passengers(pNo).Started == 0 || Passengers(pNo).Finished == 1,
+            continue;
         end
+        
+        %   Else, calculate new Position.
         
         %   F = m*a => a = F/m
         Weight              =   Passengers(pNo).Weight;
-        Acceleration        =   TotalForce/Weight;
+        Acceleration        =   Passengers(pNo).TotalForce/Weight;
         
         %   Store old position.
         Passengers(pNo).OldPosition     =   Passengers(pNo).Position;
         OldPosition                     =   Passengers(pNo).OldPosition;
         
         %   Calculate new position.
-        Passengers(pNo).Position        =   dt*Acceleration + Passengers(pNo).Position;
+        Passengers(pNo).Position        =   dt*Acceleration + OldPosition;
         Position                        =   Passengers(pNo).Position;
-        
-        
-        %   Catch strange position assignments
-        row = int16(Position(2));
-        col = int16(Position(1));
-        
-        if isequal(Position, OldPosition),
-            error('Old and new Positions are equal. Division by zero');
-        end
-        
-        if row == 0 || col == 0 || row > m || col > n,
-            error('Column or Row out of bounds.');
-        end
-        
-        %   Clear trash.
-        clear col row SocialForce WalGESS11lForce RejectForce FieldForce TotalForce Weight Acceleration Position OldPosition;
-        
-        %   Check if the passenger has finished.
-        Group   = Passengers(pNo).Group;
-        Ends    = [Groups(Group).Ends.Position];
-        nEnds   = length(Ends(1,:));
-        for i = 1:nEnds,
-            Direction   = (Passengers(pNo).Position - Ends(:,i));
-            Distance    = norm(Direction);
-            Direction   = Direction./Distance;
-            
-            if Distance < ExitRadius + Passengers(pNo).Radius,
-                Passengers(pNo).Finished = 1;
-            end
-        end
-        %   Clear trash.
-        clear Direction Distance nEnds Ends Group;
     end
     
     %   Plot this shit.
-    StartedMatrix       = [Passengers.Started];         %   This is ugly, but needed to debug.
-    FinishedMatrix      = [Passengers.Finished];
-    PassengersReady     = sum(StartedMatrix) - sum(FinishedMatrix);
-    PassengerPositions  = zeros(2, PassengersReady);
-    MatrixPosition      = 1;
-    for i = 1:nTotalPassengers,
-        Started     = Passengers(i).Started;
-        Finished    = Passengers(i).Finished;
-        if Started == 1 && Finished == 0,
-            PassengerPositions(:,MatrixPosition) = Passengers(i).Position;
-            MatrixPosition = MatrixPosition + 1;
-        end
-    end
+    %   Plot walls.
     WallPositions       = [Walls.Position];
+    plot(WallPositions(1, :), m - WallPositions(2, :) + 1, '.k', 'MarkerSize', 20);
+    
+    %   Plot Exits.
     ExitPositions       = zeros(2, nExits);
     MatrixPosition      = 1;
     for i = 1:nGroups,
@@ -272,10 +266,28 @@ for t = 1:dt:T,
         ExitPositions(:,MatrixPosition:MatrixPosition+nEnds-1) = Ends;
         MatrixPosition = MatrixPosition + nEnds;
     end
-    plot(WallPositions(1, :), WallPositions(2, :), '.k', 'MarkerSize', 20);
     hold on;
-    plot(ExitPositions(1, :), ExitPositions(2, :), '.r', 'MarkerSize', 20);
-    plot(PassengerPositions(1, :), PassengerPositions(2, :), '.bl', 'MarkerSize', 30);
+    plot(ExitPositions(1, :), m - ExitPositions(2, :) + 1, '.r', 'MarkerSize', 30);
+    
+    %   Plot Spawn points
+    SpawnPositions      = zeros(2, nSpawns);
+    MatrixPosition      = 1;
+    for i = 1:nGroups,
+        Spawns = [Groups(i).Starts.Position];
+        nStarts = length(Spawns(1, :));
+        SpawnPositions(:, MatrixPosition:MatrixPosition+nStarts-1) = Spawns;
+        MatrixPosition = MatrixPosition + nStarts;
+    end
+    plot(SpawnPositions(1,:), m - SpawnPositions(2, :) + 1, '.g', 'MarkerSize', 30);
+    
+    %   Plot Passengers
+    for i = 1:nTotalPassengers,
+        Started     = Passengers(i).Started;
+        Finished    = Passengers(i).Finished;
+        if Started == 1 && Finished == 0,
+            plot(Passengers(i).Position(1), m - Passengers(i).Position(2) + 1, '.bl', 'MarkerSize', 20 + 3*Passengers(i).Radius);
+        end
+    end
     xlim([0 n]);
     ylim([0 m]);
     title(num2str(t));
@@ -283,10 +295,20 @@ for t = 1:dt:T,
     %   Add Frame to movie.
     Frame = getframe(gca);
     Movie = addframe(Movie, Frame);
-    clf('reset');
     
     %   Clear trash.
-    clear PassengersReady PassengerPositions WallPositions ExitPositions MatrixPosition i Ends nEnds StartedMatrix FinishedMatrix Started Finished;
+    clear WallPositions ExitPositions MatrixPosition i Ends nEnds Spawns nStarts SpawnPositions StartedMatrix FinishedMatrix Started Finished;
+    if sum([Passengers.Finished]) == nTotalPassengers,
+        %   Add another 25 frames without any passenger moving to fade the
+        %   result out.
+        for i = 1:25,
+            Movie = addframe(Movie, Frame);
+        end
+        break;
+    end
+    
+    %   Clear frame.
+    clf('reset');
 end
 
 Movie = close(Movie);

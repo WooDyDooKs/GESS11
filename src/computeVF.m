@@ -49,7 +49,7 @@ if File ~= -1,
     hold on;
      
     %   Plot Vectorfield
-    quiver(VFX(1:10:m, 1:10:n), VFY(1:10:m, 1:10:n), 2);  
+    quiver(VFX, VFY, 2);  
     
     [WallRows, WallCols, V] = find(F == 0);
     %   Plot Walls
