@@ -43,7 +43,9 @@
 
 run Setup;
 
-Movie = avifile('Output.avi');
+close all;
+
+Movie = avifile('Output.avi', 'compression', 'None');
 clf('reset');
 
 %   Our simulation will run the specified time with a specified frequency.
@@ -262,7 +264,7 @@ for t = 1:dt:T,
         Position                        =   Passengers(pNo).Position;
     end
     
-    Frame = figure('Visible', 'Off');
+    Frame = figure('Visible', 'Off', 'units', 'normalized', 'outerposition', [0 0 1 1]);
     
     %   Plot this shit.
     %   Plot walls.

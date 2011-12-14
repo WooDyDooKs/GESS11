@@ -39,8 +39,8 @@ dt                  =   0.1;
 Lambda              =   0.5;
 ExitRadius          =   1;
 pInfArea            =   1.5;
-sInfArea            =   10;
-wInfArea            =   3;
+sInfArea            =   15;
+wInfArea            =   1;
 nPassengers         =   40;
 nTotalPassengers    =   nPassengers * nGroups;
 fField              =   20;
@@ -53,8 +53,8 @@ spawnSecurityFactor =   1.5;
 %   Change these values to adjust default behaviour.                     %
 %************************************************************************%
 Defaults.Interactionstrength.Physical   =   20;
-Defaults.Interactionstrength.Social     =   30;
-Defaults.Interactionstrength.Wall       =   50;
+Defaults.Interactionstrength.Social     =   40;
+Defaults.Interactionstrength.Wall       =   60;
 Defaults.Interactionrange.Physical      =   pInfArea;
 Defaults.Interactionrange.Social        =   sInfArea;
 Defaults.Interactionrange.Wall          =   wInfArea;
