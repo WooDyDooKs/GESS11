@@ -293,7 +293,7 @@ for t = 1:dt:T,
     title(num2str(t));
     
     %   Add Frame to movie.
-    Frame = getframe(gca);
+    Frame = getframe(gca, [0 0 n m]);
     Movie = addframe(Movie, Frame);
     
     %   Clear trash.
