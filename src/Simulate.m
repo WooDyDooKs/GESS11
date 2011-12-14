@@ -98,7 +98,7 @@ for t = 1:dt:T,
         end
         
         Field = Vectorfields{Passengers(pNo).Group};
-        Passengers(pNo).FieldForce = [Field(row, col, 1); Field(row, col, 2)] * Passengers(pNo).Aggression;
+        Passengers(pNo).FieldForce = [Field(row, col, 1); Field(row, col, 2)] * (Passengers(pNo).Aggression + fField);
         
         clear row col Position;
         
@@ -171,6 +171,10 @@ for t = 1:dt:T,
             
             if Distance < sInfArea + Passengers(pNo).Radius + Passengers(opNo).Radius;
                 
+                %   Debug Stuff
+                Position = Passengers(pNo).Position;
+                OldPosition = Passengers(pNo).OldPosition;
+                
                 %   Now calculate the social force
                 Direction = (Passengers(pNo).Position - Passengers(opNo).Position)./Distance;
                 Move = (Passengers(pNo).Position - Passengers(pNo).OldPosition);
@@ -195,16 +199,20 @@ for t = 1:dt:T,
         FieldForce          =   Passengers(pNo).FieldForce;
         TotalForce          =   SocialForce + WallForce + RejectForce + FieldForce;
         
+        %   Check for errors
+        if sum(isnan(TotalForce)) ~= 0,
+            error('NaN in TotalForce.')
+        end
+        
         %   F = m*a => a = F/m
         Weight              =   Passengers(pNo).Weight;
         Acceleration        =   TotalForce/Weight;
         
         %   Store old position.
-        OldPosition                     =   Passengers(pNo).OldPosition;
         Passengers(pNo).OldPosition     =   Passengers(pNo).Position;
+        OldPosition                     =   Passengers(pNo).OldPosition;
         
         %   Calculate new position.
-        Position                        =   Passengers(pNo).Position;
         Passengers(pNo).Position        =   dt*Acceleration + Passengers(pNo).Position;
         Position                        =   Passengers(pNo).Position;
         
@@ -213,8 +221,12 @@ for t = 1:dt:T,
         row = int16(Position(2));
         col = int16(Position(1));
         
+        if isequal(Position, OldPosition),
+            error('Old and new Positions are equal. Division by zero');
+        end
+        
         if row == 0 || col == 0 || row > m || col > n,
-            error('Something went wrong.');
+            error('Column or Row out of bounds.');
         end
         
         %   Clear trash.

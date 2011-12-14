@@ -74,6 +74,7 @@ sInfArea            =   10;
 wInfArea            =   1.5;
 nPassengers         =   10;
 nTotalPassengers    =   nPassengers * nGroups;
+fField              =   40;
 
 %   Description of the group array format:
 %   =====================================================================
