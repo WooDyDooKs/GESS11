@@ -77,7 +77,11 @@ for t = 1:dt:T,
     %   Calculate forces for every passenger.
     for pNo = 1:nTotalPassengers,
         
-    
+        %   Check, if the passenger has started or not finished. If not, stop here.
+        if Passengers(pNo).Started == 0 || Passengers(pNo).Finished == 1,
+            continue;
+        end
+         
         %   Check if the passenger has finished.
         Group   = Passengers(pNo).Group;
         Ends    = [Groups(Group).Ends.Position];
@@ -92,6 +96,7 @@ for t = 1:dt:T,
                 disp('A passenger has reached its target.');
             end
         end
+        
         
         %   Now re-check, if the passenger has started or not finished. If not, stop here.
         if Passengers(pNo).Started == 0 || Passengers(pNo).Finished == 1,
@@ -295,8 +300,8 @@ for t = 1:dt:T,
             plot(Passengers(i).Position(1), m - Passengers(i).Position(2) + 1, '.bl', 'MarkerSize', 20 + 3*Passengers(i).Radius);
         end
     end
-    xlim([0 n]);
-    ylim([0 m]);
+    xlim([0 n+1]);
+    ylim([0 m+1]);
     title(num2str(t));
     
     %   Add Frame to movie.

@@ -171,7 +171,7 @@ end
 
 [t, order] = sort([Walls.Unneeded], 'descend');
 Walls = Walls(order);
-Walls = Walls(find([Walls.Unneeded]));
+Walls = Walls(find([Walls.Unneeded] == 0));
 nWalls = length(Walls);
 
 %   Description of the passenger array format:
