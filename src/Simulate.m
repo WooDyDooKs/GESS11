@@ -49,6 +49,9 @@ clf('reset');
 %   Our simulation will run the specified time with a specified frequency.
 for t = 1:dt:T,
     
+    %   Display actual time.
+    disp(['dt is ' num2str(t)]);
+    
     for pNo = 1:nTotalPassengers,
         %   Check, if the passenger has started.
         if Passengers(pNo).Started == 0,
@@ -62,6 +65,7 @@ for t = 1:dt:T,
                     Position = Passengers(pNo).Position;
                     Passengers(pNo).OldPosition = Passengers(pNo).Position + [(unidrnd(2*1e3)-1e3)/1e6; (unidrnd(2*1e3)-1e3)/1e6];
                     Passengers(pNo).Started = 1;
+                    disp('A new passenger has spawned!');
                     break;
                 end
             end
@@ -85,6 +89,7 @@ for t = 1:dt:T,
 
             if Distance < ExitRadius + Passengers(pNo).Radius,
                 Passengers(pNo).Finished = 1;
+                disp('A passenger has reached its target.');
             end
         end
         
@@ -252,6 +257,8 @@ for t = 1:dt:T,
         Position                        =   Passengers(pNo).Position;
     end
     
+    Frame = figure('Visible', 'Off');
+    
     %   Plot this shit.
     %   Plot walls.
     WallPositions       = [Walls.Position];
@@ -293,7 +300,6 @@ for t = 1:dt:T,
     title(num2str(t));
     
     %   Add Frame to movie.
-    Frame = getframe(gca, [0 0 n m]);
     Movie = addframe(Movie, Frame);
     
     %   Clear trash.
@@ -308,7 +314,7 @@ for t = 1:dt:T,
     end
     
     %   Clear frame.
-    clf('reset');
+    close(Frame);
 end
 
 Movie = close(Movie);
