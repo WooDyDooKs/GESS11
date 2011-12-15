@@ -324,7 +324,7 @@ for t = 1:dt:T,
     
     %   Start new movie if the old one gets too big.
     if mod(t, 201) == 0,
-        close(Movie);
+        Movie = close(Movie);
         movieCount = movieCount + 1;  
         Movie = avifile(['Output' num2str(movieCount) '.avi'], 'compression', 'None'); 
     end
