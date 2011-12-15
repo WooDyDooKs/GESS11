@@ -44,15 +44,23 @@
 run Setup;
 
 close all;
+    
+movieCount = 1;
+Movie = avifile(['Output' num2str(movieCount) '.avi'], 'compression', 'None'); 
+gcf;
+set(gcf, 'visible', 'off', 'units', 'normalized', 'outerposition', [0 0 1 1]);
 
-Movie = avifile('Output.avi', 'compression', 'None');
-clf('reset');
+%   Measure time in full steps
+time = 0;
 
 %   Our simulation will run the specified time with a specified frequency.
 for t = 1:dt:T,
     
-    %   Display actual time.
-    disp(['dt is ' num2str(t)]);
+    timeold = time;
+    time = int16(t);
+    if timeold ~= time,
+        disp([num2str(time) ' of ' num2str(T)]);
+    end
     
     for pNo = 1:nTotalPassengers,
         %   Check, if the passenger has started.
@@ -64,10 +72,8 @@ for t = 1:dt:T,
                 if Spawns(Passengers(pNo).Group).Starts(sNo) > Passengers(pNo).Radius + spawnSecurityFactor,
                     %   The passenger can start at this position.
                     Passengers(pNo).Position = Groups(Passengers(pNo).Group).Starts(sNo).Position;
-                    Position = Passengers(pNo).Position;
                     Passengers(pNo).OldPosition = Passengers(pNo).Position + [(unidrnd(2*1e3)-1e3)/1e6; (unidrnd(2*1e3)-1e3)/1e6];
                     Passengers(pNo).Started = 1;
-                    disp('A new passenger has spawned!');
                     break;
                 end
             end
@@ -95,7 +101,6 @@ for t = 1:dt:T,
 
             if Distance < ExitRadius + Passengers(pNo).Radius,
                 Passengers(pNo).Finished = 1;
-                disp('A passenger has reached its target.');
             end
         end
         
@@ -207,12 +212,8 @@ for t = 1:dt:T,
             end
             
             
-            if Distance < sInfArea + Passengers(pNo).Radius + Passengers(opNo).Radius;
-                
-                %   Debug Stuff
-                Position = Passengers(pNo).Position;
-                OldPosition = Passengers(pNo).OldPosition;
-                
+            if Distance < sInfArea + Passengers(pNo).Radius + Passengers(opNo).Radius,
+                    
                 %   Now calculate the social force
                 Direction = (Passengers(pNo).Position - Passengers(opNo).Position)./Distance;
                 Move = (Passengers(pNo).Position - Passengers(pNo).OldPosition);
@@ -264,8 +265,6 @@ for t = 1:dt:T,
         Position                        =   Passengers(pNo).Position;
     end
     
-    Frame = figure('Visible', 'Off', 'units', 'normalized', 'outerposition', [0 0 1 1]);
-    
     %   Plot this shit.
     %   Plot walls.
     WallPositions       = [Walls.Position];
@@ -307,7 +306,7 @@ for t = 1:dt:T,
     title(num2str(t));
     
     %   Add Frame to movie.
-    Movie = addframe(Movie, Frame);
+    Movie = addframe(Movie, gcf);
     
     %   Clear trash.
     clear WallPositions ExitPositions MatrixPosition i Ends nEnds Spawns nStarts SpawnPositions StartedMatrix FinishedMatrix Started Finished;
@@ -315,13 +314,20 @@ for t = 1:dt:T,
         %   Add another 25 frames without any passenger moving to fade the
         %   result out.
         for i = 1:25,
-            Movie = addframe(Movie, Frame);
+            Movie = addframe(Movie, gcf);
         end
         break;
     end
     
-    %   Clear frame.
-    close(Frame);
+    %   Clear figure;
+    clf;
+    
+    %   Start new movie if the old one gets too big.
+    if mod(t, 201) == 0,
+        close(Movie);
+        movieCount = movieCount + 1;  
+        Movie = avifile(['Output' num2str(movieCount) '.avi'], 'compression', 'None'); 
+    end
 end
 
 Movie = close(Movie);

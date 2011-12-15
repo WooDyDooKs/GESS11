@@ -34,13 +34,13 @@ Vectorfields        =   preprocessSituation(Map, Layers);
 [m, n, nGroups]     =   size(Layers);
 
 %   Define variables neede for the simulation.
-T                   =   200;
+T                   =   400;
 dt                  =   0.1;
-Lambda              =   0.5;
-ExitRadius          =   1;
+Lambda              =   0.7;
+ExitRadius          =   1.5;
 pInfArea            =   1.5;
 sInfArea            =   15;
-wInfArea            =   1;
+wInfArea            =   2;
 nPassengers         =   40;
 nTotalPassengers    =   nPassengers * nGroups;
 fField              =   20;
@@ -52,8 +52,8 @@ spawnSecurityFactor =   1.5;
 %                                                                        %       
 %   Change these values to adjust default behaviour.                     %
 %************************************************************************%
-Defaults.Interactionstrength.Physical   =   20;
-Defaults.Interactionstrength.Social     =   40;
+Defaults.Interactionstrength.Physical   =   17;
+Defaults.Interactionstrength.Social     =   30;
 Defaults.Interactionstrength.Wall       =   60;
 Defaults.Interactionrange.Physical      =   pInfArea;
 Defaults.Interactionrange.Social        =   sInfArea;
